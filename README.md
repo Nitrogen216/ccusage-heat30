@@ -132,11 +132,14 @@ Legend: ▫ ▪ ▪ ■ ■
 
 ### SVG Export Features
 When using `--svg`, you get a comprehensive dashboard featuring:
+- **Default save location**: If you run `--svg` without a path, the SVG is saved to your **Desktop** as `cc-heatmap-YYYYMMDD.svg`.
+- **Custom path**: You can still provide a custom output path with `--svg <path>`.
 - **Left side**: GitHub-style heatmap with month/day labels and color legend
 - **Right side**: Professional table showing top 5 usage days with model details
 - **Bottom**: Highlighted billing summary with total cost
 - **Centered layout**: All elements properly aligned and centered
 - **Professional styling**: Clean typography and GitHub-inspired color scheme
+- **Tooltips**: Hovering over heatmap cells in most SVG viewers shows the date and corresponding usage value.
 
 ## Requirements
 

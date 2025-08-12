@@ -7,6 +7,7 @@ import { execFileSync, execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import os from 'node:os';
 const require = createRequire(import.meta.url);
 
 // ---- config
@@ -30,11 +31,6 @@ const hex2rgb = (hex)=>{
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return m ? { r: parseInt(m[1],16), g: parseInt(m[2],16), b: parseInt(m[3],16) } : {r:0,g:0,b:0};
 };
-const bg = (hex, s='  ')=>{
-  if (noColor || !supportsColor) return s; // Respect no-color flag
-  const {r,g,b}=hex2rgb(hex);
-  return `\x1b[48;2;${r};${g};${b}m${s}\x1b[0m`;
-};
 
 // ---- arg parsing (minimal)
 const args = process.argv.slice(2);
@@ -51,19 +47,43 @@ for (let i=0;i<args.length;i++){
 // metric & output options
 const metric = (flags.metric ?? DEFAULT_METRIC).toLowerCase(); // tokens | cost | input | output
 const weekStart = (flags['week-start'] ?? WEEK_START).toLowerCase(); // sun | mon
-const svgOut = flags.svg;           // e.g. --svg assets/cc-heatmap.svg
+const svgFlag = flags.svg;          // --svg (to Desktop by default) or --svg &lt;path&gt;
 const noColor = !!flags['no-color'];
 const timezone = flags.timezone;    // Pass through to ccusage (optional)
 
-// Color support detection
-let supportsColor = false;
-try {
-  supportsColor = process.stdout.isTTY && (
-    process.env.FORCE_COLOR || 
-    process.env.COLORTERM || 
-    (process.env.TERM && process.env.TERM !== 'dumb')
-  );
-} catch (e) {}
+// ---- color capability detection (replace the old block)
+const isTTY = !!process.stdout.isTTY;
+const depth = isTTY && typeof process.stdout.getColorDepth === 'function'
+  ? process.stdout.getColorDepth()
+  : 1; // 1/4/8/24
+const hasTrueColor = depth >= 24 || /\b(truecolor|24bit)\b/i.test(process.env.COLORTERM || '');
+const has256 = depth >= 8;
+const supportsColor = !flags['no-color'] && isTTY && (hasTrueColor || has256);
+
+// Map RGB -> xterm-256 color code
+function rgbToAnsi256(r, g, b) {
+  if (r === g && g === b) {
+    if (r < 8) return 16;
+    if (r > 248) return 231;
+    return Math.round(((r - 8) / 247) * 24) + 232;
+  }
+  const rr = Math.round((r / 255) * 5);
+  const gg = Math.round((g / 255) * 5);
+  const bb = Math.round((b / 255) * 5);
+  return 16 + 36 * rr + 6 * gg + bb;
+}
+
+// ---- bg() (replace the old one)
+const bg = (hex, s='  ')=>{
+  if (!supportsColor) return s; // respect --no-color or no color support
+  const {r,g,b} = hex2rgb(hex);
+  if (hasTrueColor) {
+    return `\x1b[48;2;${r};${g};${b}m${s}\x1b[0m`;
+  }
+  // 256-color fallback
+  const code = rgbToAnsi256(r,g,b);
+  return `\x1b[48;5;${code}m${s}\x1b[0m`;
+};
 
 // ---- compute date range
 const today = new Date(); 
@@ -332,7 +352,17 @@ console.log(bottomBorder);
 console.log();
 
 // ---- optional SVG output
-if (svgOut) {
+if (svgFlag) {
+  // Resolve output path: if --svg is passed without a value, default to Desktop
+  let svgOutPath;
+  if (svgFlag === true) {
+    const home = (os.homedir && os.homedir()) || process.env.HOME || process.env.USERPROFILE || process.cwd();
+    const desktop = path.join(home, 'Desktop');
+    const defaultName = `cc-heatmap-${ymd(today)}.svg`;
+    svgOutPath = path.join(desktop, defaultName);
+  } else {
+    svgOutPath = String(svgFlag);
+  }
   const cell=12, gap=3, top=60;
   // Calculate heatmap dimensions
   const gridWidth = weeks * (cell + gap) - gap;
@@ -509,7 +539,7 @@ if (svgOut) {
   svg += `<text x="${totalWidth/2}" y="${footerY}" class="label" text-anchor="middle">Date range: ${iso(since)} to ${iso(today)} | Metric: ${metric} | Thresholds: ${th.map(t => t.toLocaleString()).join(', ')}</text>\n`;
   
   svg += `</svg>\n`;
-  fs.mkdirSync(path.dirname(svgOut), { recursive: true });
-  fs.writeFileSync(svgOut, svg, 'utf-8');
-  console.log(`SVG written to ${svgOut}`);
+  fs.mkdirSync(path.dirname(svgOutPath), { recursive: true });
+  fs.writeFileSync(svgOutPath, svg, 'utf-8');
+  console.log(`SVG written to ${svgOutPath}`);
 }
