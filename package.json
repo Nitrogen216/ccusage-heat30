@@ -1,0 +1,14 @@
+{
+  "name": "ccusage-heat30",
+  "version": "0.1.0",
+  "description": "GitHub-style heatmap for last 30 days of Claude Code tokens, powered by ccusage.",
+  "bin": {
+    "ccheat30": "bin/cli.mjs"
+  },
+  "type": "module",
+  "license": "MIT",
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "ccusage": "^15.9.0"
+  }
+}

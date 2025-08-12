@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="380" viewBox="0 0 900 380" role="img" aria-label="ccusage-heat - Claude Code usage heatmap">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<style>
+.title{font:16px -apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-weight:600;fill:#24292f}
+.small{font:10px -apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;fill:#656d76}
+.label{font:9px -apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;fill:#656d76}
+.legend-label{font:11px -apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;fill:#656d76}
+.table-header{font:11px -apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-weight:600;fill:#24292f}
+.table-cell{font:10px -apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;fill:#24292f}
+.billing{font:12px -apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-weight:600;fill:#0969da}
+</style>
+<text x="450" y="25" class="title" text-anchor="middle">ccusage-heat - Claude Code Usage (Last 30 Days)</text>
+<text x="151.5" y="50" class="small">Jul</text>
+<text x="211.5" y="50" class="small">Aug</text>
+<rect x="151.5" y="60" width="12" height="12" rx="2" ry="2" fill="#ebedf0" data-date="2025-07-07" data-value="null"><title>2025-07-07</title></rect>
+<rect x="166.5" y="60" width="12" height="12" rx="2" ry="2" fill="#ebedf0" data-date="2025-07-14" data-value="0"><title>2025-07-14: 0 cost</title></rect>
+<rect x="181.5" y="60" width="12" height="12" rx="2" ry="2" fill="#ebedf0" data-date="2025-07-21" data-value="0"><title>2025-07-21: 0 cost</title></rect>
+<rect x="196.5" y="60" width="12" height="12" rx="2" ry="2" fill="#ebedf0" data-date="2025-07-28" data-value="0"><title>2025-07-28: 0 cost</title></rect>
+<rect x="211.5" y="60" width="12" height="12" rx="2" ry="2" fill="#9be9a8" data-date="2025-08-04" data-value="0.1401891"><title>2025-08-04: 0.14 cost</title></rect>
+<rect x="226.5" y="60" width="12" height="12" rx="2" ry="2" fill="#216e39" data-date="2025-08-11" data-value="9.12648930000003"><title>2025-08-11: 9.126 cost</title></rect>
+<rect x="151.5" y="75" width="12" height="12" rx="2" ry="2" fill="#ebedf0" data-date="2025-07-08" data-value="null"><title>2025-07-08</title></rect>
+<rect x="166.5" y="75" width="12" height="12" rx="2" ry="2" fill="#ebedf0" data-date="2025-07-15" data-value="0"><title>2025-07-15: 0 cost</title></rect>
+<rect x="181.5" y="75" width="12" height="12" rx="2" ry="2" fill="#ebedf0" data-date="2025-07-22" data-value="0"><title>2025-07-22: 0 cost</title></rect>
+<rect x="196.5" y="75" width="12" height="12" rx="2" ry="2" fill="#ebedf0" data-date="2025-07-29" data-value="0"><title>2025-07-29: 0 cost</title></rect>
+<rect x="211.5" y="75" width="12" height="12" rx="2" ry="2" fill="#40c463" data-date="2025-08-05" data-value="1.3188159000000002"><title>2025-08-05: 1.319 cost</title></rect>
+<rect x="226.5" y="75" width="12" height="12" rx="2" ry="2" fill="#ebedf0"></rect>
+<rect x="151.5" y="90" width="12" height="12" rx="2" ry="2" fill="#ebedf0" data-date="2025-07-09" data-value="null"><title>2025-07-09</title></rect>
+<rect x="166.5" y="90" width="12" height="12" rx="2" ry="2" fill="#ebedf0" data-date="2025-07-16" data-value="0"><title>2025-07-16: 0 cost</title></rect>
+<rect x="181.5" y="90" width="12" height="12" rx="2" ry="2" fill="#ebedf0" data-date="2025-07-23" data-value="0"><title>2025-07-23: 0 cost</title></rect>
+<rect x="196.5" y="90" width="12" height="12" rx="2" ry="2" fill="#9be9a8" data-date="2025-07-30" data-value="0.2958075"><title>2025-07-30: 0.296 cost</title></rect>
+<rect x="211.5" y="90" width="12" height="12" rx="2" ry="2" fill="#30a14e" data-date="2025-08-06" data-value="2.3187670500000004"><title>2025-08-06: 2.319 cost</title></rect>
+<rect x="226.5" y="90" width="12" height="12" rx="2" ry="2" fill="#ebedf0"></rect>
+<rect x="151.5" y="105" width="12" height="12" rx="2" ry="2" fill="#ebedf0" data-date="2025-07-10" data-value="null"><title>2025-07-10</title></rect>
+<rect x="166.5" y="105" width="12" height="12" rx="2" ry="2" fill="#ebedf0" data-date="2025-07-17" data-value="0"><title>2025-07-17: 0 cost</title></rect>
+<rect x="181.5" y="105" width="12" height="12" rx="2" ry="2" fill="#ebedf0" data-date="2025-07-24" data-value="0"><title>2025-07-24: 0 cost</title></rect>
+<rect x="196.5" y="105" width="12" height="12" rx="2" ry="2" fill="#216e39" data-date="2025-07-31" data-value="7.319638950000001"><title>2025-07-31: 7.32 cost</title></rect>
+<rect x="211.5" y="105" width="12" height="12" rx="2" ry="2" fill="#ebedf0" data-date="2025-08-07" data-value="0"><title>2025-08-07: 0 cost</title></rect>
+<rect x="226.5" y="105" width="12" height="12" rx="2" ry="2" fill="#ebedf0"></rect>
+<rect x="151.5" y="120" width="12" height="12" rx="2" ry="2" fill="#ebedf0" data-date="2025-07-11" data-value="null"><title>2025-07-11</title></rect>
+<rect x="166.5" y="120" width="12" height="12" rx="2" ry="2" fill="#ebedf0" data-date="2025-07-18" data-value="0"><title>2025-07-18: 0 cost</title></rect>
+<rect x="181.5" y="120" width="12" height="12" rx="2" ry="2" fill="#ebedf0" data-date="2025-07-25" data-value="0"><title>2025-07-25: 0 cost</title></rect>
+<rect x="196.5" y="120" width="12" height="12" rx="2" ry="2" fill="#9be9a8" data-date="2025-08-01" data-value="0.7634961000000001"><title>2025-08-01: 0.763 cost</title></rect>
+<rect x="211.5" y="120" width="12" height="12" rx="2" ry="2" fill="#ebedf0" data-date="2025-08-08" data-value="0"><title>2025-08-08: 0 cost</title></rect>
+<rect x="226.5" y="120" width="12" height="12" rx="2" ry="2" fill="#ebedf0"></rect>
+<rect x="151.5" y="135" width="12" height="12" rx="2" ry="2" fill="#ebedf0" data-date="2025-07-12" data-value="null"><title>2025-07-12</title></rect>
+<rect x="166.5" y="135" width="12" height="12" rx="2" ry="2" fill="#ebedf0" data-date="2025-07-19" data-value="0"><title>2025-07-19: 0 cost</title></rect>
+<rect x="181.5" y="135" width="12" height="12" rx="2" ry="2" fill="#ebedf0" data-date="2025-07-26" data-value="0"><title>2025-07-26: 0 cost</title></rect>
+<rect x="196.5" y="135" width="12" height="12" rx="2" ry="2" fill="#9be9a8" data-date="2025-08-02" data-value="0.07101210000000001"><title>2025-08-02: 0.071 cost</title></rect>
+<rect x="211.5" y="135" width="12" height="12" rx="2" ry="2" fill="#ebedf0" data-date="2025-08-09" data-value="0"><title>2025-08-09: 0 cost</title></rect>
+<rect x="226.5" y="135" width="12" height="12" rx="2" ry="2" fill="#ebedf0"></rect>
+<rect x="151.5" y="150" width="12" height="12" rx="2" ry="2" fill="#ebedf0" data-date="2025-07-13" data-value="0"><title>2025-07-13: 0 cost</title></rect>
+<rect x="166.5" y="150" width="12" height="12" rx="2" ry="2" fill="#ebedf0" data-date="2025-07-20" data-value="0"><title>2025-07-20: 0 cost</title></rect>
+<rect x="181.5" y="150" width="12" height="12" rx="2" ry="2" fill="#ebedf0" data-date="2025-07-27" data-value="0"><title>2025-07-27: 0 cost</title></rect>
+<rect x="196.5" y="150" width="12" height="12" rx="2" ry="2" fill="#ebedf0" data-date="2025-08-03" data-value="0"><title>2025-08-03: 0 cost</title></rect>
+<rect x="211.5" y="150" width="12" height="12" rx="2" ry="2" fill="#ebedf0" data-date="2025-08-10" data-value="0"><title>2025-08-10: 0 cost</title></rect>
+<rect x="226.5" y="150" width="12" height="12" rx="2" ry="2" fill="#ebedf0"></rect>
+<text x="141.5" y="68" class="label" text-anchor="end">Mon</text>
+<text x="141.5" y="98" class="label" text-anchor="end">Wed</text>
+<text x="141.5" y="128" class="label" text-anchor="end">Fri</text>
+<text x="141.5" y="158" class="label" text-anchor="end">Sun</text>
+<text x="195" y="182" class="legend-label" text-anchor="middle">Contributions</text>
+<text x="127.5" y="207" class="label">Less</text>
+<rect x="162.5" y="195" width="12" height="12" rx="2" ry="2" fill="#ebedf0"></rect>
+<rect x="176.5" y="195" width="12" height="12" rx="2" ry="2" fill="#9be9a8"></rect>
+<rect x="190.5" y="195" width="12" height="12" rx="2" ry="2" fill="#40c463"></rect>
+<rect x="204.5" y="195" width="12" height="12" rx="2" ry="2" fill="#30a14e"></rect>
+<rect x="218.5" y="195" width="12" height="12" rx="2" ry="2" fill="#216e39"></rect>
+<text x="240.5" y="207" class="label">More</text>
+<text x="298.5" y="50" class="legend-label">Top 5 Days by cost</text>
+<rect x="293.5" y="60" width="460" height="20" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1" rx="3"/>
+<text x="333.5" y="74" class="table-header" text-anchor="middle">Date</text>
+<text x="448.5" y="74" class="table-header" text-anchor="middle">Models</text>
+<text x="553.5" y="74" class="table-header" text-anchor="middle">Input</text>
+<text x="603.5" y="74" class="table-header" text-anchor="middle">Output</text>
+<text x="658.5" y="74" class="table-header" text-anchor="middle">Total</text>
+<text x="718.5" y="74" class="table-header" text-anchor="middle">Cost</text>
+<rect x="293.5" y="91" width="460" height="22" fill="#fafbfc"/>
+<rect x="293.5" y="91" width="460" height="22" fill="none" stroke="#e1e4e8" stroke-width="1"/>
+<text x="303.5" y="105" class="table-cell" text-anchor="start">2025-08-11</text>
+<text x="373.5" y="105" class="table-cell" text-anchor="start">claude-sonnet-4-20250514</text>
+<text x="573.5" y="105" class="table-cell" text-anchor="end">1,332</text>
+<text x="623.5" y="105" class="table-cell" text-anchor="end">37,912</text>
+<text x="683.5" y="105" class="table-cell" text-anchor="end">17,806,355</text>
+<text x="743.5" y="105" class="table-cell" text-anchor="end">$9.1265</text>
+<rect x="293.5" y="113" width="460" height="22" fill="none" stroke="#e1e4e8" stroke-width="1"/>
+<text x="303.5" y="127" class="table-cell" text-anchor="start">2025-07-31</text>
+<text x="373.5" y="127" class="table-cell" text-anchor="start">claude-sonnet-4-20250514</text>
+<text x="573.5" y="127" class="table-cell" text-anchor="end">720</text>
+<text x="623.5" y="127" class="table-cell" text-anchor="end">17,914</text>
+<text x="683.5" y="127" class="table-cell" text-anchor="end">10,731,073</text>
+<text x="743.5" y="127" class="table-cell" text-anchor="end">$7.3196</text>
+<rect x="293.5" y="135" width="460" height="22" fill="#fafbfc"/>
+<rect x="293.5" y="135" width="460" height="22" fill="none" stroke="#e1e4e8" stroke-width="1"/>
+<text x="303.5" y="149" class="table-cell" text-anchor="start">2025-08-06</text>
+<text x="373.5" y="149" class="table-cell" text-anchor="start">claude-sonnet-4-20250514</text>
+<text x="573.5" y="149" class="table-cell" text-anchor="end">249</text>
+<text x="623.5" y="149" class="table-cell" text-anchor="end">5,637</text>
+<text x="683.5" y="149" class="table-cell" text-anchor="end">3,719,951</text>
+<text x="743.5" y="149" class="table-cell" text-anchor="end">$2.3188</text>
+<rect x="293.5" y="157" width="460" height="22" fill="none" stroke="#e1e4e8" stroke-width="1"/>
+<text x="303.5" y="171" class="table-cell" text-anchor="start">2025-08-05</text>
+<text x="373.5" y="171" class="table-cell" text-anchor="start">claude-sonnet-4-20250514</text>
+<text x="573.5" y="171" class="table-cell" text-anchor="end">164</text>
+<text x="623.5" y="171" class="table-cell" text-anchor="end">9,438</text>
+<text x="683.5" y="171" class="table-cell" text-anchor="end">1,282,975</text>
+<text x="743.5" y="171" class="table-cell" text-anchor="end">$1.3188</text>
+<rect x="293.5" y="179" width="460" height="22" fill="#fafbfc"/>
+<rect x="293.5" y="179" width="460" height="22" fill="none" stroke="#e1e4e8" stroke-width="1"/>
+<text x="303.5" y="193" class="table-cell" text-anchor="start">2025-08-01</text>
+<text x="373.5" y="193" class="table-cell" text-anchor="start">claude-sonnet-4-20250514</text>
+<text x="573.5" y="193" class="table-cell" text-anchor="end">2,592</text>
+<text x="623.5" y="193" class="table-cell" text-anchor="end">5,113</text>
+<text x="683.5" y="193" class="table-cell" text-anchor="end">966,999</text>
+<text x="743.5" y="193" class="table-cell" text-anchor="end">$0.7635</text>
+<rect x="170.5" y="227" width="559" height="40" fill="#fff3cd" stroke="#ffeaa7" stroke-width="2" rx="8"/>
+<text x="450" y="247" class="billing" text-anchor="middle">You have cumulatively used $21.3542 USD of Claude Code in this billing cycle.</text>
+<text x="450" y="302" class="label" text-anchor="middle">Date range: 2025-07-13 to 2025-08-11 | Metric: cost | Thresholds: 1, 2, 4, 10</text>
+</svg>
