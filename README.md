@@ -1,18 +1,23 @@
 # ccusage-heat30
 
-A Node.js CLI tool that generates GitHub-style heatmaps showing the last 30 days of Claude Code token usage with comprehensive analytics.
-
+A Node.js CLI tool built on top of [ccusage](https://github.com/ryoppippi/ccusage) that generates GitHub-style heatmaps displaying the last 30 days of Claude Code token usage with extended visualization features and comprehensive analytics.
 
 ## Features
 
-- 📊 **GitHub-style heatmap** - Visual representation of your Claude Code usage over the last 30 days
-- 💰 **Multiple metrics** - Track tokens, cost, input tokens, or output tokens
-- 🎨 **Terminal display** - Beautiful colored output with ANSI colors and centered billing summary
-- 📁 **Professional SVG export** - Dashboard-style layout with heatmap, statistics table, and billing summary
-- 📈 **Top usage days** - Shows your top 5 usage days with detailed statistics including models used
-- 💵 **Billing summary** - Prominently displays cumulative usage costs for the billing cycle
-- 🎯 **Centered layout** - Both terminal and SVG outputs feature properly centered content
-- ⚙️ **Customizable** - Configure week start day, timezone, and output options
+- 📊 **GitHub-style heatmap** – Visual representation of your Claude Code usage over the last 30 days, leveraging the `ccusage` library.
+- 💰 **Multiple metrics** – Track tokens, cost, input tokens, or output tokens.
+- 🎨 **Terminal display** – Beautiful colored output with ANSI colors and a centered billing summary.
+- 📁 **Professional SVG export** – Dashboard-style layout combining heatmap, statistics table, and billing summary.
+- 📈 **Top usage days** – Displays your top 5 usage days with detailed statistics including models used.
+- 💵 **Billing summary** – Prominently shows cumulative usage costs for the billing cycle.
+- 🎯 **Centered layout** – Both terminal and SVG outputs feature properly centered content for professional presentation.
+- ⚙️ **Customizable** – Configure week start day, timezone, and output options.
+
+## Prerequisites
+
+- Node.js version 18 or higher is required.
+- The `ccusage` tool is installed automatically when using `npx`. For global or local installations, ensure `ccusage` is accessible.
+- Permission to run CLI tools on your system.
 
 ## Installation
 
@@ -69,6 +74,8 @@ ccusage-heat30 --svg ./assets/usage-heatmap.svg
 ccusage-heat30 --metric cost --svg cost-analysis.svg
 ```
 
+When using the `--svg` option without specifying a file path, the SVG file is saved to your Desktop with the filename pattern `cc-heatmap-YYYYMMDD.svg`, where `YYYYMMDD` is the current date. The exported SVG includes interactive tooltips that display the date and corresponding usage value when hovering over heatmap cells in most SVG viewers.
+
 ### Advanced Options
 
 ```bash
@@ -87,13 +94,13 @@ ccusage-heat30 --metric cost --svg output.svg --week-start sun
 
 ## Command Line Options
 
-| Option | Description | Values | Default |
-|--------|-------------|--------|---------|
-| `--metric` | Choose what metric to visualize | `tokens`, `cost`, `input`, `output` | `tokens` |
-| `--week-start` | Set the first day of the week | `sun`, `mon` | `mon` |
-| `--svg <path>` | Export heatmap as SVG file | File path | - |
-| `--no-color` | Disable terminal colors | - | - |
-| `--timezone <tz>` | Timezone for usage data | Timezone string | System default |
+| Option         | Description                    | Values                      | Default  |
+|----------------|-------------------------------|-----------------------------|----------|
+| `--metric`     | Choose what metric to visualize | `tokens`, `cost`, `input`, `output` | `tokens` |
+| `--week-start` | Set the first day of the week  | `sun`, `mon`                | `mon`    |
+| `--svg <path>` | Export heatmap as SVG file     | File path                   | -        |
+| `--no-color`   | Disable terminal colors        | -                           | -        |
+| `--timezone <tz>` | Timezone for usage data      | Timezone string             | System default |
 
 ## Sample Output
 
@@ -131,30 +138,32 @@ Legend: ▫ ▪ ▪ ■ ■
 ```
 
 ### SVG Export Features
-When using `--svg`, you get a comprehensive dashboard featuring:
-- **Default save location**: If you run `--svg` without a path, the SVG is saved to your **Desktop** as `cc-heatmap-YYYYMMDD.svg`.
-- **Custom path**: You can still provide a custom output path with `--svg <path>`.
-- **Left side**: GitHub-style heatmap with month/day labels and color legend
-- **Right side**: Professional table showing top 5 usage days with model details
-- **Bottom**: Highlighted billing summary with total cost
-- **Centered layout**: All elements properly aligned and centered
-- **Professional styling**: Clean typography and GitHub-inspired color scheme
-- **Tooltips**: Hovering over heatmap cells in most SVG viewers shows the date and corresponding usage value.
+
+When exporting with `--svg`, you receive a comprehensive dashboard with the following characteristics:
+
+- Default save location is the Desktop with filename `cc-heatmap-YYYYMMDD.svg` if no path is specified.
+- Supports custom output paths to save SVG files in any directory.
+- Left side features a GitHub-style heatmap with month/day labels and a color legend.
+- Right side contains a professional table showing the top 5 usage days with detailed model information.
+- Bottom section highlights the billing summary with total cost.
+- All elements are properly aligned and centered for a clean, professional look.
+- Interactive tooltips appear when hovering over heatmap cells in most SVG viewers, showing the date and usage value.
+- The SVG output is responsive and displays correctly across various viewers.
 
 ## Requirements
 
 - Node.js 18 or higher
-- [ccusage](https://github.com/ryoppippi/ccusage) - Available as npm dependency or via npx
+- [ccusage](https://github.com/ryoppippi/ccusage) - Available as an npm dependency or via npx
 
 ## How It Works
 
-1. **Data Collection**: Fetches usage data using the `ccusage` tool for the last 30 days
-2. **Grid Generation**: Creates a GitHub-style 7×N grid representing days of the week
-3. **Color Mapping**: Applies color intensity based on usage quantiles
-4. **Analytics Processing**: Calculates top usage days and billing totals
-5. **Terminal Rendering**: Displays heatmap with ANSI colors and centered billing summary
-6. **SVG Export**: Generates comprehensive dashboard with heatmap, table, and billing info
-7. **Layout Optimization**: Centers all content for professional presentation
+1. **Data Collection**: Fetches usage data using the `ccusage` tool for the last 30 days.
+2. **Grid Generation**: Creates a GitHub-style 7×N grid representing days of the week.
+3. **Color Mapping**: Applies color intensity based on usage quantiles.
+4. **Analytics Processing**: Calculates top usage days and billing totals.
+5. **Terminal Rendering**: Displays heatmap with ANSI colors and centered billing summary.
+6. **SVG Export**: Generates a comprehensive dashboard with heatmap, table, and billing info.
+7. **Layout Optimization**: Centers all content for professional presentation.
 
 ## Contributing
 
@@ -162,17 +171,19 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Acknowledgments
 
+This project is built upon and extends the [ccusage](https://github.com/ryoppippi/ccusage) library, which is licensed under the MIT License. Modifications and enhancements in this tool are also provided under the MIT License.
+
 Special thanks to these amazing open source projects that made this tool possible:
 
-- **[ccusage](https://github.com/ryoppippi/ccusage)** by [@ryoppippi](https://github.com/ryoppippi) - The core library for Claude Code usage data collection and analysis
-- **[ccstat](https://github.com/ktny/ccstat)** by [@ktny](https://github.com/ktny) - Inspiration and reference for Claude Code usage visualization
+- **[ccusage](https://github.com/ryoppippi/ccusage)** by [@ryoppippi](https://github.com/ryoppippi) – The core library for Claude Code usage data collection and analysis (MIT License).
+- **[ccstat](https://github.com/ktny/ccstat)** by [@ktny](https://github.com/ktny) – Inspiration and reference for Claude Code usage visualization.
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+MIT License – see [LICENSE](LICENSE) file for details.
 
 ---
 
 *Built for the Claude Code community* 🤖✨
 
-Made with ❤️ in Edmonton.
+Made by Nitro with ❤️ in Edmonton.
