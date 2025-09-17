@@ -47,7 +47,7 @@ for (let i=0;i<args.length;i++){
 // metric & output options
 const metric = (flags.metric ?? DEFAULT_METRIC).toLowerCase(); // tokens | cost | input | output
 const weekStart = (flags['week-start'] ?? WEEK_START).toLowerCase(); // sun | mon
-const svgFlag = flags.svg;          // --svg (to Desktop by default) or --svg &lt;path&gt;
+const svgFlag = flags.svg;          // --svg (to Desktop by default) or --svg <path>
 const noColor = !!flags['no-color'];
 const timezone = flags.timezone;    // Pass through to ccusage (optional)
 
@@ -74,7 +74,7 @@ function rgbToAnsi256(r, g, b) {
 }
 
 // ---- bg() (replace the old one)
-const bg = (hex, s='  ')=>{
+const bg = (hex, s='  ') => {
   if (!supportsColor) return s; // respect --no-color or no color support
   const {r,g,b} = hex2rgb(hex);
   if (hasTrueColor) {
@@ -189,6 +189,9 @@ const gridStart = startOfWeek(since, ws);
 const gridEnd = startOfWeek(today, ws);
 const weeks = Math.round((gridEnd - gridStart) / dayMs / 7) + 1;
 
+// Use a consistent visual cell width across all modes to avoid misalignment
+const CELL_W = 3; // two-character cell + one space (or one char + two spaces in no-color)
+
 const grid = Array.from({length: 7}, () => Array(weeks).fill(null));
 
 for (let i = 0; i < weeks * 7; i++) {
@@ -209,7 +212,7 @@ for (let i = 0; i < weeks * 7; i++) {
 
 
 // Month labels (top row, properly aligned to data range)
-let monthLine = '     ';
+let monthLine = '';
 const monthLabelsSvg = [];
 const monthLabelsPlaced = new Set(); // Prevent duplicate labels
 
@@ -232,55 +235,99 @@ for (let w = 0; w < weeks; w++) {
   // If this week has valid data and this month doesn't have a label yet, show month label
   if (hasValidDataInWeek && !monthLabelsPlaced.has(monthKey)) {
     const label = weekStartDate.toLocaleString('en-US', { month: 'short' });
-    monthLine += label.padEnd(4, ' ');
+    // Fit month label to CELL_W characters
+    monthLine += label.slice(0, CELL_W).padEnd(CELL_W, ' ');
     monthLabelsSvg.push({ col: w, label });
     monthLabelsPlaced.add(monthKey);
   } else {
-    monthLine += '    ';
+    monthLine += ' '.repeat(CELL_W);
   }
 }
+
+// Do not center; monthLine is already column-aligned. Keep trailing spaces for full width.
 
 // Day labels (Mon/Wed/Fri)
 const dayLabels = ws === 1 
   ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] 
   : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-console.log(`\nClaude Code usage — last ${DAYS} days (${metric})\n`);
-console.log(monthLine);
+// Collect all output content first
+let outputLines = [];
+outputLines.push(`Claude Code usage`);
+outputLines.push('');
 
-for (let r = 0; r < 7; r++) {
-  let line = (dayLabels[r] || '   ') + ' ';
-  for (let w = 0; w < weeks; w++) {
-    const cell = grid[r][w];
-    if (cell === null || !cell.inRange) {
-      if (noColor || !supportsColor) {
-        line += '·  '; // Use bullet point for empty cells in no-color mode
+// Add month labels as a separate row, aligned to the heatmap grid (no centering)
+outputLines.push('    ' + monthLine);
+
+// Create logo lines - complete CCUSAGE-HEAT30 design
+const logoLines = [
+  "  ██████╗ ██████╗██╗   ██╗███████╗ █████╗  ██████╗ ███████╗ ",
+  " ██╔════╝██╔════╝██║   ██║██╔════╝██╔══██╗██╔════╝ ██╔════╝ ",
+  " ██║     ██║     ██║   ██║███████╗███████║██║  ███╗█████╗   ",
+  " ╚██████╗╚██████╗╚██████╔╝███████║██║  ██║╚██████╔╝███████╗ ",
+  "  ╚═════╝ ╚═════╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝ ",
+  "  ██╗  ██╗███████╗ █████╗ ████████╗██████╗  ██████╗        ",
+  "  ██║  ██║██╔════╝██╔══██╗╚══██╔══╝╚════██╗██╔═████╗       ",
+  "  ███████║█████╗  ███████║   ██║    █████╔╝██║██╔██║       ",
+  "  ██╔══██║██╔══╝  ██╔══██║   ██║    ╚═══██╗████╔╝██║       ",
+  "  ██║  ██║███████╗██║  ██║   ██║   ██████╔╝╚██████╔╝       ",
+  "  ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═════╝  ╚═════╝        "
+];
+
+// Use logo height to determine how many heatmap rows to show
+const logoHeight = logoLines.length;
+
+for (let r = 0; r < logoHeight; r++) {
+  let line = '';
+
+  if (r < 7) {
+    // Show heatmap data for first 7 rows
+    line = (dayLabels[r] || '   ') + ' ';
+    for (let w = 0; w < weeks; w++) {
+      const cell = grid[r][w];
+      if (cell === null || !cell.inRange) {
+        if (noColor || !supportsColor) {
+          line += '.  '; // ASCII dot to avoid ambiguous width
+        } else {
+          line += bg(PALETTE[0], '  ') + ' ';
+        }
       } else {
-        line += bg(PALETTE[0], '  ') + ' ';
-      }
-    } else {
-      if (noColor || !supportsColor) {
-        // Use different characters for different intensities in no-color mode
-        const chars = ['·', '▪', '▪', '■', '■'];
-        const colorIndex = PALETTE.indexOf(cell.hex);
-        const char = chars[colorIndex] || '■';
-        line += char + ' ';
-      } else {
-        line += bg(cell.hex, '  ') + ' ';
+        if (noColor || !supportsColor) {
+          // Use ASCII-safe characters to avoid ambiguous-width glyphs
+          const chars = ['.', ':', '-', '+', '#'];
+          const colorIndex = PALETTE.indexOf(cell.hex);
+          const char = chars[colorIndex] || '■';
+          line += char + '  '; // data cell: 1 char + 2 spaces => 3 cols
+        } else {
+          line += bg(cell.hex, '  ') + ' ';
+        }
       }
     }
+  } else {
+    // For extra logo rows, add spaces to match heatmap width
+    line = '    '; // day label space
+    for (let w = 0; w < weeks; w++) {
+      line += ' '.repeat(CELL_W);
+    }
   }
-  console.log(line);
+  
+  // Add logo to the right side
+  const logoLine = logoLines[r] || '';
+  line += '    ' + logoLine; // Add some spacing between heatmap and logo
+  
+  outputLines.push(line);
 }
 
-// ---- Top 5 Days Table
+// ---- Top 10 Days by Cost Table
 const sortedDaysData = [...map.values()]
-  .filter(d => pickValue(d) > 0)
-  .sort((a, b) => pickValue(b) - pickValue(a))
-  .slice(0, 5);
+  .filter(d => (d.totalCost ?? 0) > 0)
+  .sort((a, b) => (b.totalCost ?? 0) - (a.totalCost ?? 0))
+  .slice(0, 10);
 
+let tableWidth = 0;
 if (sortedDaysData.length > 0) {
-  console.log(`\nTop 5 Days by ${metric}:`);
+  outputLines.push('');
+  outputLines.push(`Top 10 Days by cost:`);
 
   const headers = ['Date', 'Models', 'Input', 'Output', 'Total', 'Cost (USD)'];
   const rows = sortedDaysData.map(day => {
@@ -309,7 +356,10 @@ if (sortedDaysData.length > 0) {
     });
     const inner = type === 'body' ? ` ${parts.join(' │ ')} ` : parts.map(p => '─'.repeat(p.length)).join(sep);
     const line = type === 'body' ? `${start}${inner}${end}` : `${start}─${inner.replace(/┬|┼|┴/g, (m) => `─${m}─`)}─${end}`;
-    console.log(line);
+    if (type === 'top') {
+      tableWidth = line.length;
+    }
+    outputLines.push(line);
   };
   
   printLine('top', headers);
@@ -325,8 +375,11 @@ if (sortedDaysData.length > 0) {
 
 // Legend
 const legend = [0,...th].map((_,i)=>bg(PALETTE[i],'  ')).join(' ');
-const thresholdText = `Less · ${th.map(t=>t.toLocaleString()).join(' · ')} · More`;
-console.log(`\nLegend: ${legend}\n        ${thresholdText}\n`);
+const thresholdText = `Less - ${th.map(t=>t.toLocaleString()).join(' - ')} - More`;
+outputLines.push('');
+outputLines.push(`Legend: ${legend}`);
+outputLines.push(`        ${thresholdText}`);
+outputLines.push('');
 
 // Calculate monthly billing total
 let monthlyTotal = 0;
@@ -336,7 +389,7 @@ let monthlyTotal = 0;
 
 // Display billing summary with decorative box
 const billingText = `You have cumulatively used $${monthlyTotal.toFixed(4)} USD of Claude Code in this billing cycle.`;
-const boxWidth = Math.max(billingText.length + 10, 90); // Add more padding for centering
+const boxWidth = tableWidth > 0 ? tableWidth : Math.max(billingText.length + 10, 90);
 const topBorder = '┌' + '─'.repeat(boxWidth - 2) + '┐';
 const bottomBorder = '└' + '─'.repeat(boxWidth - 2) + '┘';
 // Center the text within the box
@@ -346,9 +399,50 @@ const leftPadding = ' '.repeat(padding);
 const rightPadding = ' '.repeat(availableSpace - billingText.length - padding);
 const paddedText = '│ ' + leftPadding + billingText + rightPadding + ' │';
 
-console.log(topBorder);
-console.log(paddedText);
-console.log(bottomBorder);
+outputLines.push(topBorder);
+outputLines.push(paddedText);
+outputLines.push(bottomBorder);
+
+// Now output everything with a big border
+const maxLineLength = Math.max(...outputLines.map(line => {
+  // Remove ANSI color codes for length calculation
+  const cleanLine = line.replace(/\x1b\[[0-9;]*m/g, '');
+  return cleanLine.length;
+}));
+
+// Compute outer box width; if terminal width is available, try to fit into (cols - 1)
+const minOuterWidth = maxLineLength + 4;
+let outerBoxWidth = Math.max(minOuterWidth, 100);
+const cols = (process.stdout && process.stdout.isTTY && typeof process.stdout.columns === 'number')
+  ? process.stdout.columns
+  : undefined;
+if (cols && cols >= 40) {
+  const safe = Math.max(40, cols - 1); // leave one column margin to avoid autowrap quirks
+  if (safe >= minOuterWidth) {
+    outerBoxWidth = safe;
+  }
+}
+const outerTopBorder = '╔' + '═'.repeat(outerBoxWidth - 2) + '╗';
+const outerBottomBorder = '╚' + '═'.repeat(outerBoxWidth - 2) + '╝';
+
+console.log('\n' + outerTopBorder);
+// Left align content with a single space on the left; compute right padding exactly
+const contentWidth = outerBoxWidth - 4;
+for (const line of outputLines) {
+  const cleanLine = line.replace(/\x1b\[[0-9;]*m/g, '');
+  const leftPad = ' ';
+  const rightSpaceCount = Math.max(0, contentWidth - 1 - cleanLine.length);
+  const rightPad = ' '.repeat(rightSpaceCount);
+  let rendered = '║' + leftPad + line + rightPad + '║';
+  const renderedCleanLen = rendered.replace(/\x1b\[[0-9;]*m/g, '').length;
+  const diff = outerBoxWidth - renderedCleanLen;
+  if (diff > 0) {
+    // Add compensation spaces before right border to keep it flush
+    rendered = rendered.slice(0, -1) + ' '.repeat(diff) + '║';
+  }
+  console.log(rendered);
+}
+console.log(outerBottomBorder);
 console.log();
 
 // ---- optional SVG output
@@ -370,9 +464,9 @@ if (svgFlag) {
   
   // Prepare table data
   const tableData = [...map.values()]
-    .filter(d => pickValue(d) > 0)
-    .sort((a, b) => pickValue(b) - pickValue(a))
-    .slice(0, 5);
+    .filter(d => (d.totalCost ?? 0) > 0)
+    .sort((a, b) => (b.totalCost ?? 0) - (a.totalCost ?? 0))
+    .slice(0, 10);
   
   // Calculate table dimensions
   const tableHeaders = ['Date', 'Models', 'Input', 'Output', 'Total', 'Cost'];
@@ -406,7 +500,8 @@ if (svgFlag) {
     monthlyTotal += day.totalCost ?? 0;
   });
   
-  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}" role="img" aria-label="ccusage-heat - Claude Code usage heatmap">\n`;
+  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}" role="img" aria-label="ccusage-heat - Claude Code usage heatmap">
+`;
   
   // Add white background
   svg += `<rect width="100%" height="100%" fill="#ffffff"/>\n`;
@@ -483,7 +578,7 @@ if (svgFlag) {
 
   // Table section (right side)
   const tableStartY = top;
-  svg += `<text x="${tableLeft}" y="${tableStartY - 10}" class="legend-label">Top 5 Days by ${metric}</text>\n`;
+  svg += `<text x="${tableLeft}" y="${tableStartY - 10}" class="legend-label">Top 10 Days by cost</text>\n`;
   
   // Table header
   const colWidths = [70, 160, 50, 50, 60, 60]; // Adjust column widths - made models column wider
