@@ -7,8 +7,11 @@
   },
   "type": "module",
   "license": "MIT",
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=20.19.4"
+  },
   "dependencies": {
-    "ccusage": "^15.9.0"
+    "@ccusage/codex": "^17.0.2",
+    "ccusage": "^17.0.2"
   }
 }

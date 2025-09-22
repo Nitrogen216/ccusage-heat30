@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
  * ccheat30 - Last-30-days GitHub-style heatmap for Claude Code usage.
- * Default metric: totalTokens; Data source: ccusage daily --json
+ * Default metric: totalTokens; Data source: ccusage/@ccusage/codex daily --json
  */
-import { execFileSync, execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
@@ -49,7 +49,17 @@ const metric = (flags.metric ?? DEFAULT_METRIC).toLowerCase(); // tokens | cost 
 const weekStart = (flags['week-start'] ?? WEEK_START).toLowerCase(); // sun | mon
 const svgFlag = flags.svg;          // --svg (to Desktop by default) or --svg <path>
 const noColor = !!flags['no-color'];
-const timezone = flags.timezone;    // Pass through to ccusage (optional)
+let showSources = (flags.source || 'both').toLowerCase(); // both | claude | codex
+if (!['both','claude','codex'].includes(showSources)) showSources = 'both';
+const timezone = (() => {
+  if (flags.timezone) return String(flags.timezone);
+  try {
+    const guess = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return guess || undefined;
+  } catch {
+    return undefined;
+  }
+})();    // Pass through to usage CLI (optional)
 
 // ---- color capability detection (replace the old block)
 const isTTY = !!process.stdout.isTTY;
@@ -91,38 +101,142 @@ today.setHours(0,0,0,0); // Set to the start of today
 const since = new Date(today); 
 since.setDate(since.getDate()-(DAYS-1)); // Go back 29 days, including today for a total of 30 days
 
-// ---- get ccusage binary or fallback to npx
-function getCcusageJSON() {
-  // 1) Try local dependency
-  try {
-    const pkgPath = require.resolve('ccusage/package.json');
-    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
-    const dir = path.dirname(pkgPath);
-    const binRel = typeof pkg.bin==='string' ? pkg.bin : (pkg.bin && Object.values(pkg.bin)[0]);
-    const bin = binRel ? path.resolve(dir, binRel) : null;
-    if (bin && fs.existsSync(bin)) {
-      const argv = ['daily','--json', '--by-model', '--since', ymd(since), '--until', ymd(today)];
-      if (timezone) argv.push('--timezone', String(timezone));
-      const out = execFileSync(bin, argv, { encoding: 'utf-8' });
-      return JSON.parse(out);
-    }
-  } catch (e) { /* ignore */ }
+// ---- ccusage CLI resolution helpers
+function resolveCliPackage(candidates) {
+  for (const name of candidates) {
+    try {
+      const pkgPath = require.resolve(`${name}/package.json`);
+      return { name, pkgPath };
+    } catch (e) { /* try next candidate */ }
+  }
+  return null;
+}
 
-  // 2) Fall back to latest npx version
-  const cmd = `npx --yes ccusage@latest daily --json --by-model --since ${ymd(since)} --until ${ymd(today)}${timezone?` --timezone ${timezone}`:''}`;
-  return JSON.parse(execSync(cmd, { encoding: 'utf-8' }));
+function buildUsageArgs() {
+  const argv = ['daily', '--json', '--by-model', '--since', ymd(since), '--until', ymd(today)];
+  if (timezone) argv.push('--timezone', String(timezone));
+  return argv;
+}
+
+function readUsageJSON({ label, packageCandidates, npxTargets }) {
+  const argv = buildUsageArgs();
+  const resolved = resolveCliPackage(packageCandidates);
+  if (resolved) {
+    try {
+      const pkg = JSON.parse(fs.readFileSync(resolved.pkgPath, 'utf-8'));
+      const dir = path.dirname(resolved.pkgPath);
+      const binRel = typeof pkg.bin === 'string' ? pkg.bin : (pkg.bin && Object.values(pkg.bin)[0]);
+      const bin = binRel ? path.resolve(dir, binRel) : null;
+      if (bin && fs.existsSync(bin)) {
+        const out = execFileSync(bin, argv, { encoding: 'utf-8' });
+        return JSON.parse(out);
+      }
+    } catch (e) { /* fall through to npx */ }
+  }
+
+  let lastError;
+  for (const target of npxTargets) {
+    try {
+      const out = execFileSync('npx', ['--yes', target, ...argv], { encoding: 'utf-8' });
+      return JSON.parse(out);
+    } catch (err) {
+      lastError = err;
+    }
+  }
+
+  if (lastError) throw lastError;
+  throw new Error(`Unable to resolve ${label} usage CLI`);
+}
+
+function getClaudeUsageJSON() {
+  return readUsageJSON({
+    label: 'Claude Code',
+    packageCandidates: ['ccusage', '@ccusage/codex'],
+    npxTargets: ['ccusage@latest', '@ccusage/codex@latest'],
+  });
+}
+
+function getCodexUsageJSON() {
+  return readUsageJSON({
+    label: 'Codex',
+    packageCandidates: ['@ccusage/codex'],
+    npxTargets: ['@ccusage/codex@latest'],
+  });
 }
 
 // ---- fetch daily data
-let raw;
-try {
-  raw = getCcusageJSON();
-} catch (e) {
-  console.error('[ccheat30] Failed to read ccusage data:', e.message);
-  process.exit(1);
+let claudeRaw;
+if (showSources !== 'codex') {
+  try {
+    claudeRaw = getClaudeUsageJSON();
+  } catch (e) {
+    console.error('[ccheat30] Failed to read Claude usage data:', e.message);
+    process.exit(1);
+  }
+} else {
+  claudeRaw = { daily: [] };
 }
-const daily = raw.daily ?? raw.data ?? [];
-const map = new Map(daily.map(d => [d.date, d]));
+
+let codexRaw;
+let codexError;
+if (showSources !== 'claude') {
+  try {
+    codexRaw = getCodexUsageJSON();
+  } catch (e) {
+    codexError = e;
+    codexRaw = null;
+  }
+} else {
+  codexRaw = null;
+}
+
+const claudeDaily = claudeRaw.daily ?? claudeRaw.data ?? [];
+const claudeMap = new Map(claudeDaily.map(d => [d.date, d]));
+const codexDaily = codexRaw ? (codexRaw.daily ?? codexRaw.data ?? []) : [];
+const normalizeCodexRow = (row) => {
+  if (!row) return row;
+  const modelEntries = row.models && typeof row.models === 'object' ? Object.entries(row.models) : [];
+  const modelsUsed = modelEntries.length > 0
+    ? modelEntries.map(([name, usage]) => usage && usage.isFallback ? `${name} (fallback)` : name)
+    : (Array.isArray(row.modelsUsed) ? row.modelsUsed : []);
+  const inputTokens = (row.inputTokens ?? 0) + (row.cachedInputTokens ?? 0);
+  const outputTokens = (row.outputTokens ?? 0) + (row.reasoningOutputTokens ?? 0);
+  const totalTokens = row.totalTokens ?? (inputTokens + outputTokens);
+  const totalCost = row.totalCost ?? row.costUSD ?? 0;
+  let isoDate = row.isoDate ?? row.date;
+  if (isoDate) {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) {
+      // already ISO
+    } else {
+      const parsed = new Date(`${row.date} UTC`);
+      if (!Number.isNaN(parsed.getTime())) {
+        const mm = String(parsed.getUTCMonth() + 1).padStart(2, '0');
+        const dd = String(parsed.getUTCDate()).padStart(2, '0');
+        isoDate = `${parsed.getUTCFullYear()}-${mm}-${dd}`;
+      }
+    }
+  }
+  return {
+    ...row,
+    modelsUsed,
+    inputTokens,
+    outputTokens,
+    totalTokens,
+    totalCost,
+    isoDate,
+  };
+};
+const codexNormalizedDaily = codexDaily.map(normalizeCodexRow);
+const codexMap = new Map(codexNormalizedDaily.map(d => [d.isoDate || d.date, d]));
+
+const summarizeCost = (entries) => {
+  let total = 0;
+  for (const day of entries) total += day.totalCost ?? 0;
+  return total;
+};
+
+const hasClaude = showSources !== 'codex';
+const codexRequested = showSources !== 'claude';
 
 // ---- pick value per day
 function pickValue(row){
@@ -151,8 +265,9 @@ const dateValues = new Map(); // Store dates and corresponding values
 for (let i=0; i<DAYS; i++){
   const d = new Date(since.getTime() + i*dayMs);
   const dateStr = iso(d);
-  const row = map.get(dateStr);
-  const val = pickValue(row);
+  const claudeRow = hasClaude ? claudeMap.get(dateStr) : null;
+  const codexRow = (showSources !== 'claude') ? codexMap.get(dateStr) : null;
+  const val = (hasClaude ? pickValue(claudeRow) : 0) + (codexRow ? pickValue(codexRow) : 0);
   values.push(val);
   dateValues.set(dateStr, val);
 }
@@ -253,7 +368,8 @@ const dayLabels = ws === 1
 
 // Collect all output content first
 let outputLines = [];
-outputLines.push(`Claude Code usage`);
+const headerTitle = showSources === 'both' ? 'Claude + Codex usage' : (showSources === 'codex' ? 'Codex usage' : 'Claude Code usage');
+outputLines.push(headerTitle);
 outputLines.push('');
 
 // Add month labels as a separate row, aligned to the heatmap grid (no centering)
@@ -318,58 +434,129 @@ for (let r = 0; r < logoHeight; r++) {
   outputLines.push(line);
 }
 
-// ---- Top 10 Days by Cost Table
-const sortedDaysData = [...map.values()]
-  .filter(d => (d.totalCost ?? 0) > 0)
-  .sort((a, b) => (b.totalCost ?? 0) - (a.totalCost ?? 0))
-  .slice(0, 10);
+// ---- Usage leaderboards (Claude + Codex)
+const tableHeaders = ['Date', 'Models', 'Input', 'Output', 'Total', 'Cost (USD)'];
+const formatTopDaysRow = (day) => {
+  const modelsArray = (() => {
+    if (Array.isArray(day.modelsUsed) && day.modelsUsed.length > 0) return day.modelsUsed;
+    if (Array.isArray(day.models) && day.models.length > 0) return day.models;
+    if (day.models && typeof day.models === 'object') return Object.keys(day.models);
+    return [];
+  })();
+  const models = modelsArray.length > 0 ? modelsArray.join(', ') : 'N/A';
+  const input = (day.inputTokens ?? 0).toLocaleString();
+  const output = (day.outputTokens ?? 0).toLocaleString();
+  const total = (day.totalTokens ?? ((day.inputTokens ?? 0) + (day.outputTokens ?? 0))).toLocaleString();
+  const cost = `$${(day.totalCost ?? 0).toFixed(4)}`;
+  return [day.date, models, input, output, total, cost];
+};
 
-let tableWidth = 0;
-if (sortedDaysData.length > 0) {
-  outputLines.push('');
-  outputLines.push(`Top 10 Days by cost:`);
+function buildTopDaysTable(headers, rows) {
+  const colWidths = headers.map((h, i) => Math.max(h.length, ...rows.map(r => r[i].length)));
+  const lines = [];
+  let width = 0;
 
-  const headers = ['Date', 'Models', 'Input', 'Output', 'Total', 'Cost (USD)'];
-  const rows = sortedDaysData.map(day => {
-    const models = (day.modelsUsed && day.modelsUsed.length > 0)
-      ? day.modelsUsed.join(', ')
-      : 'N/A';
-    const input = (day.inputTokens ?? 0).toLocaleString();
-    const output = (day.outputTokens ?? 0).toLocaleString();
-    const total = (day.totalTokens ?? ((day.inputTokens ?? 0) + (day.outputTokens ?? 0))).toLocaleString();
-    const cost = `$${(day.totalCost ?? 0).toFixed(4)}`;
-    return [day.date, models, input, output, total, cost];
+  const partsFor = (cells) => cells.map((cell, i) => {
+    const isNumeric = i >= 2;
+    return isNumeric ? cell.padStart(colWidths[i]) : cell.padEnd(colWidths[i]);
   });
 
-  const colWidths = headers.map((h, i) => Math.max(h.length, ...rows.map(r => r[i].length)));
-
-  const printLine = (type = 'body', content = []) => {
-    const [start, sep, end] = {
+  const draw = (type, content) => {
+    const mapping = {
       top: ['┌', '┬', '┐'],
       mid: ['├', '┼', '┤'],
       bot: ['└', '┴', '┘'],
-      body:['│', '│', '│'],
-    }[type];
-    const parts = content.map((cell, i) => {
-      const isNumeric = i >= 2; // Input, Output, Total, Cost
-      return isNumeric ? cell.padStart(colWidths[i]) : cell.padEnd(colWidths[i]);
-    });
-    const inner = type === 'body' ? ` ${parts.join(' │ ')} ` : parts.map(p => '─'.repeat(p.length)).join(sep);
-    const line = type === 'body' ? `${start}${inner}${end}` : `${start}─${inner.replace(/┬|┼|┴/g, (m) => `─${m}─`)}─${end}`;
-    if (type === 'top') {
-      tableWidth = line.length;
+      body: ['│', '│', '│'],
+    };
+    const [startChar, separator, endChar] = mapping[type];
+    const padded = partsFor(content);
+    let line;
+    if (type === 'body') {
+      line = `${startChar} ${padded.join(' │ ')} ${endChar}`;
+    } else {
+      const filler = padded.map(part => '─'.repeat(part.length)).join(separator);
+      line = `${startChar}─${filler.replace(/┬|┼|┴/g, (m) => `─${m}─`)}─${endChar}`;
     }
-    outputLines.push(line);
+    lines.push(line);
+    width = Math.max(width, line.length);
   };
-  
-  printLine('top', headers);
-  printLine('body', headers);
-  printLine('mid', headers);
 
+  draw('top', headers);
+  draw('body', headers);
+  draw('mid', headers);
   for (const row of rows) {
-    printLine('body', row);
+    draw('body', row);
   }
-  printLine('bot', headers);
+  draw('bot', headers);
+
+  return { lines, width };
+}
+
+let maxTableWidth = 0;
+const MAX_LEADERBOARD_ROWS = 5;
+
+function ensureCurrentDayIncluded(map, rows) {
+  const todayKey = iso(today);
+  const todayEntry = map.get(todayKey);
+  if (!todayEntry) return rows;
+  const todayCost = todayEntry.totalCost ?? todayEntry.costUSD ?? 0;
+  if (todayCost <= 0) return rows;
+  const exists = rows.some(d => (d.isoDate ?? d.date) === (todayEntry.isoDate ?? todayEntry.date));
+  if (exists) return rows;
+  return [...rows, todayEntry]
+    .sort((a, b) => (b.totalCost ?? b.costUSD ?? 0) - (a.totalCost ?? a.costUSD ?? 0))
+    .slice(0, MAX_LEADERBOARD_ROWS);
+}
+
+const sortedClaudeDaysDataInitial = hasClaude
+  ? [...claudeMap.values()]
+      .filter(d => (d.totalCost ?? 0) > 0)
+      .sort((a, b) => (b.totalCost ?? 0) - (a.totalCost ?? 0))
+      .slice(0, MAX_LEADERBOARD_ROWS)
+  : [];
+const sortedClaudeDaysData = hasClaude
+  ? ensureCurrentDayIncluded(claudeMap, sortedClaudeDaysDataInitial)
+  : [];
+
+const sortedCodexDaysDataInitial = codexRequested
+  ? [...codexMap.values()]
+      .filter(d => (d.totalCost ?? 0) > 0)
+      .sort((a, b) => (b.totalCost ?? 0) - (a.totalCost ?? 0))
+      .slice(0, MAX_LEADERBOARD_ROWS)
+  : [];
+const sortedCodexDaysData = codexRequested
+  ? ensureCurrentDayIncluded(codexMap, sortedCodexDaysDataInitial)
+  : [];
+
+function appendTopDaysSection(title, days, { error, emptyMessage }) {
+  outputLines.push('');
+  outputLines.push(`${title}:`);
+  if (error) {
+    const msg = error.message || String(error);
+    outputLines.push(`(Failed to load data: ${msg})`);
+    return;
+  }
+  if (days.length === 0) {
+    outputLines.push(emptyMessage);
+    return;
+  }
+  const rows = days.map(formatTopDaysRow);
+  const { lines, width } = buildTopDaysTable(tableHeaders, rows);
+  maxTableWidth = Math.max(maxTableWidth, width);
+  outputLines.push(...lines);
+}
+
+if (hasClaude) {
+  appendTopDaysSection('Top 5 Claude Code Days by cost', sortedClaudeDaysData, {
+    emptyMessage: 'No Claude Code usage data recorded.',
+  });
+}
+
+if (codexRequested) {
+  appendTopDaysSection('Top 5 Codex Days by cost', sortedCodexDaysData, {
+    error: codexError,
+    emptyMessage: 'No Codex usage data recorded.',
+  });
 }
 
 
@@ -381,26 +568,40 @@ outputLines.push(`Legend: ${legend}`);
 outputLines.push(`        ${thresholdText}`);
 outputLines.push('');
 
-// Calculate monthly billing total
-let monthlyTotal = 0;
-[...map.values()].forEach(day => {
-  monthlyTotal += day.totalCost ?? 0;
-});
+// Calculate monthly billing totals
+const claudeMonthlyTotal = hasClaude ? summarizeCost(claudeMap.values()) : 0;
+const codexMonthlyTotal = codexRequested ? summarizeCost(codexMap.values()) : 0;
 
 // Display billing summary with decorative box
-const billingText = `You have cumulatively used $${monthlyTotal.toFixed(4)} USD of Claude Code in this billing cycle.`;
-const boxWidth = tableWidth > 0 ? tableWidth : Math.max(billingText.length + 10, 90);
+const billingLines = [];
+if (hasClaude) {
+  billingLines.push(`You have cumulatively used $${claudeMonthlyTotal.toFixed(4)} USD of Claude Code in this billing cycle.`);
+}
+if (codexRequested) {
+  billingLines.push(`You have cumulatively used $${codexMonthlyTotal.toFixed(4)} USD of Codex in this billing cycle.`);
+}
+const minBoxWidth = billingLines.length ? Math.max(...billingLines.map(line => line.length + 4)) : 40;
+const boxWidth = maxTableWidth > 0
+  ? Math.max(maxTableWidth, minBoxWidth)
+  : Math.max(minBoxWidth, 90);
 const topBorder = '┌' + '─'.repeat(boxWidth - 2) + '┐';
 const bottomBorder = '└' + '─'.repeat(boxWidth - 2) + '┘';
-// Center the text within the box
-const availableSpace = boxWidth - 4; // Space inside the box (excluding borders and spaces)
-const padding = Math.floor((availableSpace - billingText.length) / 2);
-const leftPadding = ' '.repeat(padding);
-const rightPadding = ' '.repeat(availableSpace - billingText.length - padding);
-const paddedText = '│ ' + leftPadding + billingText + rightPadding + ' │';
+const innerWidth = boxWidth - 4;
+const centerLine = (text) => {
+  const padding = Math.max(0, Math.floor((innerWidth - text.length) / 2));
+  const leftPadding = ' '.repeat(padding);
+  const rightPadding = ' '.repeat(Math.max(0, innerWidth - text.length - padding));
+  return `│ ${leftPadding}${text}${rightPadding} │`;
+};
 
 outputLines.push(topBorder);
-outputLines.push(paddedText);
+if (billingLines.length === 0) {
+  outputLines.push(centerLine('No usage detected.'));
+} else {
+  for (const line of billingLines) {
+    outputLines.push(centerLine(line));
+  }
+}
 outputLines.push(bottomBorder);
 
 // Now output everything with a big border
@@ -463,7 +664,7 @@ if (svgFlag) {
   const gridHeight = 7 * (cell + gap) - gap;
   
   // Prepare table data
-  const tableData = [...map.values()]
+  const tableData = [...claudeMap.values()]
     .filter(d => (d.totalCost ?? 0) > 0)
     .sort((a, b) => (b.totalCost ?? 0) - (a.totalCost ?? 0))
     .slice(0, 10);
@@ -496,7 +697,7 @@ if (svgFlag) {
   
   // Calculate billing summary
   let monthlyTotal = 0;
-  [...map.values()].forEach(day => {
+  [...claudeMap.values()].forEach(day => {
     monthlyTotal += day.totalCost ?? 0;
   });
   
@@ -578,7 +779,7 @@ if (svgFlag) {
 
   // Table section (right side)
   const tableStartY = top;
-  svg += `<text x="${tableLeft}" y="${tableStartY - 10}" class="legend-label">Top 10 Days by cost</text>\n`;
+  svg += `<text x="${tableLeft}" y="${tableStartY - 10}" class="legend-label">Top 5 Days by cost</text>\n`;
   
   // Table header
   const colWidths = [70, 160, 50, 50, 60, 60]; // Adjust column widths - made models column wider

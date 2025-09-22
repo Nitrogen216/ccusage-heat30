@@ -1,36 +1,38 @@
 # ccusage-heat30
 
-A Node.js CLI tool built on top of [ccusage](https://github.com/ryoppippi/ccusage) that generates GitHub-style heatmaps displaying the last 30 days of Claude Code token usage with extended visualization features and comprehensive analytics.
+A Node.js CLI tool built on top of [`ccusage`](https://www.npmjs.com/package/ccusage) with optional [`@ccusage/codex`](https://www.npmjs.com/package/@ccusage/codex) integration that generates GitHub-style heatmaps displaying the last 30 days of Claude Code token usage with extended visualization features and comprehensive analytics.
 
-## 🚀 What's New in v0.1.0
+## 🚀 What's New in v0.5.0
 
 #### 🆕 New Features
-- **Enhanced Analytics**: Expanded usage statistics table to show top 10 days (increased from 5)
-- **Cost-First Sorting**: Changed sorting criteria from tokens to cost for better financial insights
-- **Improved Cost Visibility**: All tables and analytics now prioritize cost metrics for better budget tracking
+- **Desktop-ready SVG exports**: `--svg` now defaults to your Desktop with a polished dashboard layout, interactive cell tooltips, and a dedicated billing summary banner.
+- **Adaptive color output**: Detects 24-bit, 256-color, and monochrome terminals automatically, falling back to readable ASCII glyphs when colors are unavailable or `--no-color` is set.
+- **Top-five leaderboards**: Cost tables now focus on the five spendiest days, always including today when usage exists, with model-level context and token breakdowns.
+- **Unified Claude + Codex heatmap**: Codex usage is merged into the main grid, accompanied by matching Codex leaderboards and billing totals.
 
 #### 🔧 Improvements
-- Better cost analysis workflow for users tracking Claude Code expenses
-- More comprehensive historical data display in both terminal and SVG outputs
-- Enhanced billing cycle awareness with cost-focused排序
+- Month labels stay aligned with the heatmap grid even on narrow terminals.
+- Numeric columns in tables get wider padding so large token counts remain legible.
+- Billing summary box centers inside the outer frame and reflects the cumulative Claude Code spend for the current billing cycle.
 
 ---
 
 ## Features
 
-- 📊 **GitHub-style heatmap** – Visual representation of your Claude Code usage over the last 30 days, leveraging the `ccusage` library.
+- 📊 **GitHub-style heatmap** – Shows combined Claude + Codex activity over the last 30 days, powered by `ccusage` and enhanced with `@ccusage/codex` when present.
 - 💰 **Multiple metrics** – Track tokens, cost, input tokens, or output tokens.
 - 🎨 **Terminal display** – Beautiful colored output with ANSI colors and a centered billing summary.
 - 📁 **Professional SVG export** – Dashboard-style layout combining heatmap, statistics table, and billing summary.
-- 📈 **Top usage days** – Displays your top 10 usage days with detailed statistics including models used, sorted by cost.
+- 📈 **Top-five usage tables** – Highlights the five costliest days for Claude (always) and Codex (when data exists), with per-model stats and today-aware inclusion.
+- 🤖 **Codex usage mirror** – Adds a Codex top-five table (via `@ccusage/codex`) beneath the Claude leaderboard whenever Codex logs are detected.
 - 💵 **Billing summary** – Prominently shows cumulative usage costs for the billing cycle.
 - 🎯 **Centered layout** – Both terminal and SVG outputs feature properly centered content for professional presentation.
 - ⚙️ **Customizable** – Configure week start day, timezone, and output options.
 
 ## Prerequisites
 
-- Node.js version 18 or higher is required.
-- The `ccusage` tool is installed automatically when using `npx`. For global or local installations, ensure `ccusage` is accessible.
+- Node.js version 20.19.4 or higher is required.
+- The `ccusage` CLI (and optional `@ccusage/codex` companion) install automatically when using `npx`. Ensure both are accessible for dual Claude/Codex reporting.
 - Permission to run CLI tools on your system.
 
 ## Installation
@@ -62,8 +64,14 @@ node bin/cli.mjs
 ### Basic Usage
 
 ```bash
-# Display token usage heatmap
+# Display combined Claude + Codex heatmap
 ccusage-heat30
+
+# Only Claude usage
+ccusage-heat30 --source claude
+
+# Only Codex usage
+ccusage-heat30 --source codex
 
 # Display cost usage heatmap  
 ccusage-heat30 --metric cost
@@ -99,12 +107,36 @@ ccusage-heat30 --week-start sun
 # Disable colors (for terminal compatibility)
 ccusage-heat30 --no-color
 
-# Specify timezone (passed to ccusage)
+# Specify timezone (defaults to your system zone, passed through to the ccusage/@ccusage tools)
 ccusage-heat30 --timezone "America/New_York"
 
+# Claude-only (hide Codex)
+ccusage-heat30 --source claude
+
+# Codex-only (hide Claude)
+ccusage-heat30 --source codex
+
 # Combine multiple options
-ccusage-heat30 --metric cost --svg output.svg --week-start sun
+ccusage-heat30 --metric cost --source claude --svg output.svg --week-start sun
 ```
+
+### Codex Companion
+
+When `@ccusage/codex` is available (either locally installed or resolved via `npx`), the CLI automatically mirrors the Claude leaderboard with a Codex top-5 table using the same styling. It also stacks Codex metrics into the main heatmap so the cells reflect total cross-platform activity. The CLI now defaults to your system timezone when calling both analyzers, so same-day usage appears under the expected local date. Use `npx @ccusage/codex@latest daily --json --by-model` to verify Codex data collection and ensure your Codex logs live under `~/.codex/`. You can toggle sources via `--source`, e.g. `--source codex` for Codex-only reports or `--source claude` to hide Codex rows while keeping combined heatmap available when set back to `both`.
+
+#### Tips for Codex reporting
+
+- `@ccusage/codex` reads session JSONL files from `~/.codex/projects/**/sessions/`. Set `CODEX_HOME` if your logs live elsewhere.
+- Codex CLI keeps appending to the session file that was opened first (Pacific Time). End or rotate sessions if you want a fresh date in your local timezone.
+- Re-run `npx @ccusage/codex@latest daily --timezone <Your/Zone>` to see where the latest spend landed. Once Codex emits a new daily file, the combined heatmap and Codex top-five table update automatically.
+- `ccusage-heat30` auto-detects your system timezone; supply `--timezone` to override for both analyzers.
+
+#### Quick check for Codex data
+
+1. `npx @ccusage/codex@latest daily --json --by-model --since $(date +%Y%m%d) --until $(date +%Y%m%d)` to confirm today's records.
+2. If the entry still shows yesterday, finish the active Codex session (or wait for Codex CLI to rotate the session file).
+3. Run `ccusage-heat30 --metric cost --source codex` (append `--timezone` if you need to override the auto-detected zone).
+
 
 ## Command Line Options
 
@@ -115,6 +147,7 @@ ccusage-heat30 --metric cost --svg output.svg --week-start sun
 | `--svg <path>` | Export heatmap as SVG file     | File path                   | -        |
 | `--no-color`   | Disable terminal colors        | -                           | -        |
 | `--timezone <tz>` | Timezone for usage data      | Timezone string             | System default |
+| `--source <mode>` | Select data source             | `both`, `claude`, `codex`     | `both`         |
 
 ## Sample Output
 
@@ -122,46 +155,52 @@ ccusage-heat30 --metric cost --svg output.svg --week-start sun
 
 ```text
 ╔══════════════════════════════════════════════════════════════════════════════════════════════════╗
-║ Claude Code usage                                                                                ║
+║ Claude + Codex usage                                                                             ║
 ║                                                                                                  ║
 ║     Aug   Sep                                                                                    ║
-║ Mon :  .  .  +  -        ██████╗ ██████╗██╗   ██╗███████╗ █████╗  ██████╗ ███████╗               ║
-║ Tue -  :  .  .  #       ██╔════╝██╔════╝██║   ██║██╔════╝██╔══██╗██╔════╝ ██╔════╝               ║
-║ Wed +  .  .  +  .       ██║     ██║     ██║   ██║███████╗███████║██║  ███╗█████╗                 ║
-║ Thu -  :  +  #  .       ╚██████╗╚██████╗╚██████╔╝███████║██║  ██║╚██████╔╝███████╗               ║
-║ Fri .  #  :  #  .        ╚═════╝ ╚═════╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝               ║
-║ Sat .  :  .  #  .        ██╗  ██╗███████╗ █████╗ ████████╗██████╗  ██████╗                       ║
-║ Sun .  .  .  -  .        ██║  ██║██╔════╝██╔══██╗╚══██╔══╝╚════██╗██╔═████╗                      ║
-║                          ███████║█████╗  ███████║   ██║    █████╔╝██║██╔██║                      ║
-║                          ██╔══██║██╔══╝  ██╔══██║   ██║    ╚═══██╗████╔╝██║                      ║
-║                          ██║  ██║███████╗██║  ██║   ██║   ██████╔╝╚██████╔╝                      ║
-║                          ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═════╝  ╚═════╝                       ║
+║ Mon .  .  .  .  +  .        ██████╗ ██████╗██╗   ██╗███████╗ █████╗  ██████╗ ███████╗            ║
+║ Tue .  .  .  .  .  .       ██╔════╝██╔════╝██║   ██║██╔════╝██╔══██╗██╔════╝ ██╔════╝            ║
+║ Wed .  .  .  .  .  .       ██║     ██║     ██║   ██║███████╗███████║██║  ███╗█████╗              ║
+║ Thu .  .  .  .  :  .       ╚██████╗╚██████╗╚██████╔╝███████║██║  ██║╚██████╔╝███████╗            ║
+║ Fri .  .  .  .  :  .        ╚═════╝ ╚═════╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝            ║
+║ Sat .  .  .  .  .  .        ██╗  ██╗███████╗ █████╗ ████████╗██████╗  ██████╗                    ║
+║ Sun .  .  .  #  -  .        ██║  ██║██╔════╝██╔══██╗╚══██╔══╝╚════██╗██╔═████╗                   ║
+║                             ███████║█████╗  ███████║   ██║    █████╔╝██║██╔██║                   ║
+║                             ██╔══██║██╔══╝  ██╔══██║   ██║    ╚═══██╗████╔╝██║                   ║
+║                             ██║  ██║███████╗██║  ██║   ██║   ██████╔╝╚██████╔╝                   ║
+║                             ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝   ╚═════╝  ╚═════╝                          ║
 ║                                                                                                  ║
-║ Top 10 Days by cost:                                                                             ║
+║ Top 5 Claude Code Days by cost:                                                                  ║
 ║ ┌────────────┬──────────────────────────┬────────┬─────────┬────────────┬────────────┐           ║
 ║ │ Date       │ Models                   │  Input │  Output │      Total │ Cost (USD) │           ║
 ║ ├────────────┼──────────────────────────┼────────┼─────────┼────────────┼────────────┤           ║
+║ │ 2025-09-17 │ claude-sonnet-4-20250514 │  6,674 │  56,496 │ 35,186,889 │   $16.6065 │           ║
 ║ │ 2025-09-16 │ claude-sonnet-4-20250514 │  7,815 │  54,873 │ 25,298,427 │   $14.3129 │           ║
+║ │ 2025-09-18 │ claude-sonnet-4-20250514 │ 30,766 │  35,870 │ 26,803,313 │   $14.6155 │           ║
 ║ │ 2025-09-11 │ claude-sonnet-4-20250514 │ 15,930 │ 105,669 │ 19,455,740 │   $13.5066 │           ║
-║ │ 2025-09-12 │ claude-sonnet-4-20250514 │    804 │  29,589 │ 24,747,006 │   $11.6230 │           ║
-║ │ 2025-09-13 │ claude-sonnet-4-20250514 │ 11,181 │  32,785 │ 15,835,853 │    $8.3557 │           ║
-║ │ 2025-08-29 │ claude-sonnet-4-20250514 │  3,187 │  16,382 │ 13,560,232 │    $7.6612 │           ║
-║ │ 2025-09-04 │ claude-sonnet-4-20250514 │ 36,943 │  12,923 │ 10,098,638 │    $7.0381 │           ║
-║ │ 2025-09-10 │ claude-sonnet-4-20250514 │  1,691 │  23,729 │ 13,083,653 │    $6.7004 │           ║
 ║ │ 2025-09-15 │ claude-sonnet-4-20250514 │ 17,568 │  12,420 │  8,060,668 │    $5.0742 │           ║
-║ │ 2025-08-20 │ claude-sonnet-4-20250514 │    400 │   7,477 │  8,738,460 │    $4.7622 │           ║
-║ │ 2025-09-14 │ claude-sonnet-4-20250514 │  2,536 │  18,157 │  7,192,406 │    $4.6024 │           ║
 ║ └────────────┴──────────────────────────┴────────┴─────────┴────────────┴────────────┘           ║
+║                                                                                                  ║
+║ Top 5 Codex Days by cost:                                                                        ║
+║ ┌──────────────┬────────────────────┬─────────────┬─────────┬────────────┬────────────┐          ║
+║ │ Date         │ Models             │       Input │  Output │      Total │ Cost (USD) │          ║
+║ ├──────────────┼────────────────────┼─────────────┼─────────┼────────────┼────────────┤          ║
+║ │ Sep 14, 2025 │ gpt-5-codex, gpt-5 │ 111,098,122 │ 228,068 │ 56,558,190 │   $10.6148 │          ║
+║ │ Sep 15, 2025 │ gpt-5-codex, gpt-5 │  41,326,259 │ 238,451 │ 21,720,550 │    $6.3410 │          ║
+║ │ Sep 21, 2025 │ gpt-5-codex        │  16,867,099 │ 115,362 │  8,835,581 │    $2.5427 │          ║
+║ │ Sep 18, 2025 │ gpt-5              │   9,081,428 │  41,812 │  4,663,912 │    $1.0790 │          ║
+║ │ Sep 19, 2025 │ gpt-5              │   1,091,427 │   8,784 │    584,563 │    $0.2055 │          ║
+║ └──────────────┴────────────────────┴─────────────┴─────────┴────────────┴────────────┘          ║
 ║                                                                                                  ║
 ║ Legend:                                                                                          ║
 ║         Less - 2,901,706 - 8,399,564 - 13,441,088 - 25,298,427 - More                          ║
 ║                                                                                                  ║
-║ ┌────────────────────────────────────────────────────────────────────────────────────┐           ║
-║ │   You have cumulatively used $97.0136 USD of Claude Code in this billing cycle.    │           ║
-║ └────────────────────────────────────────────────────────────────────────────────────┘           ║
+║ ┌────────────────────────────────────────────────────────────────────────────────────┐          ║
+║ │    You have cumulatively used $97.0136 USD of Claude Code in this billing cycle.    │          ║
+║ │      You have cumulatively used $21.9594 USD of Codex in this billing cycle.        │          ║
+║ └────────────────────────────────────────────────────────────────────────────────────┘          ║
 ╚══════════════════════════════════════════════════════════════════════════════════════════════════╝
 ```
-
 ### SVG Export Features
 
 When exporting with `--svg`, you receive a comprehensive dashboard with the following characteristics:
@@ -169,7 +208,7 @@ When exporting with `--svg`, you receive a comprehensive dashboard with the foll
 - Default save location is the Desktop with filename `cc-heatmap-YYYYMMDD.svg` if no path is specified.
 - Supports custom output paths to save SVG files in any directory.
 - Left side features a GitHub-style heatmap with month/day labels and a color legend.
-- Right side contains a professional table showing the top 10 usage days with detailed model information, sorted by cost.
+- Right side contains a professional table showing the top 5 usage days with detailed model information, sorted by cost.
 - Bottom section highlights the billing summary with total cost.
 - All elements are properly aligned and centered for a clean, professional look.
 - Interactive tooltips appear when hovering over heatmap cells in most SVG viewers, showing the date and usage value.
@@ -177,12 +216,12 @@ When exporting with `--svg`, you receive a comprehensive dashboard with the foll
 
 ## Requirements
 
-- Node.js 18 or higher
-- [ccusage](https://github.com/ryoppippi/ccusage) - Available as an npm dependency or via npx
+- Node.js 20.19.4 or higher
+- [ccusage](https://github.com/ryoppippi/ccusage) (Claude) / [`@ccusage/codex`](https://www.npmjs.com/package/@ccusage/codex) (Codex optional) - Available as npm dependencies or via npx
 
 ## How It Works
 
-1. **Data Collection**: Fetches usage data using the `ccusage` tool for the last 30 days.
+1. **Data Collection**: Fetches usage data using the `ccusage` CLI (and `@ccusage/codex` when available) for the last 30 days.
 2. **Grid Generation**: Creates a GitHub-style 7×N grid representing days of the week.
 3. **Color Mapping**: Applies color intensity based on usage quantiles.
 4. **Analytics Processing**: Calculates top usage days and billing totals.
@@ -196,11 +235,11 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Acknowledgments
 
-This project is built upon and extends the [ccusage](https://github.com/ryoppippi/ccusage) library, which is licensed under the MIT License. Modifications and enhancements in this tool are also provided under the MIT License.
+This project is built upon and extends the [ccusage](https://github.com/ryoppippi/ccusage) project and consumes its scoped npm release [`@ccusage/codex`](https://www.npmjs.com/package/@ccusage/codex) for Codex metrics, all licensed under the MIT License. Modifications and enhancements in this tool are also provided under the MIT License.
 
 Special thanks to these amazing open source projects that made this tool possible:
 
-- **[ccusage](https://github.com/ryoppippi/ccusage)** by [@ryoppippi](https://github.com/ryoppippi) – The core library for Claude Code usage data collection and analysis (MIT License).
+- **[ccusage](https://github.com/ryoppippi/ccusage)** by [@ryoppippi](https://github.com/ryoppippi) – The core project powering the [`@ccusage/codex`](https://www.npmjs.com/package/@ccusage/codex) CLI used for Claude Code usage data collection and analysis (MIT License).
 - **[ccstat](https://github.com/ktny/ccstat)** by [@ktny](https://github.com/ktny) – Inspiration and reference for Claude Code usage visualization.
 
 ## License
