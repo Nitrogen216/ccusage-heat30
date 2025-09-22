@@ -377,11 +377,13 @@ outputLines.push('    ' + monthLine);
 
 // Create logo lines - complete CCUSAGE-HEAT30 design
 const logoLines = [
-  "  ██████╗ ██████╗██╗   ██╗███████╗ █████╗  ██████╗ ███████╗ ",
-  " ██╔════╝██╔════╝██║   ██║██╔════╝██╔══██╗██╔════╝ ██╔════╝ ",
-  " ██║     ██║     ██║   ██║███████╗███████║██║  ███╗█████╗   ",
-  " ╚██████╗╚██████╗╚██████╔╝███████║██║  ██║╚██████╔╝███████╗ ",
-  "  ╚═════╝ ╚═════╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝ ",
+  " ██████╗  ██████╗ ██╗   ██╗  ██████╗    █████╗    ██████╗  ███████╗",
+  "██╔═══██╗ ██╔═══██╗ ██║   ██║ ██╔════╝   ██╔══██╗  ██╔════╝  ██╔════╝",
+  "██║   ██║ ██║   ██║ ██║   ██║ ██║  ███╗  ███████║  ██║  ███╗ █████╗  ",
+  "██║   ██║ ██║   ██║ ██║   ██║ ██║   ██║  ██╔══██║  ██║   ██║ ██╔══╝  ",
+  "╚██████╔╝ ╚██████╔╝ ╚██████╔╝ ╚██████╔╝  ██║  ██║  ╚██████║  ███████╗",
+  " ╚═════╝  ╚═════╝  ╚═════╝  ╚═════╝  ╚═╝  ╚═╝   ╚═════╝  ╚══════╝",
+  "                                                                ",
   "  ██╗  ██╗███████╗ █████╗ ████████╗██████╗  ██████╗        ",
   "  ██║  ██║██╔════╝██╔══██╗╚══██╔══╝╚════██╗██╔═████╗       ",
   "  ███████║█████╗  ███████║   ██║    █████╔╝██║██╔██║       ",
@@ -390,48 +392,49 @@ const logoLines = [
   "  ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═════╝  ╚═════╝        "
 ];
 
+const BASE_LOGO_LINES = 13;
+const topLogoRows = Math.max(0, logoLines.length - BASE_LOGO_LINES);
+const topLogoLines = logoLines.slice(0, topLogoRows);
+const dayLogoLines = logoLines.slice(topLogoRows, topLogoRows + 7);
+const bottomLogoLines = logoLines.slice(topLogoRows + 7);
+
 // Use logo height to determine how many heatmap rows to show
-const logoHeight = logoLines.length;
+const logoHeight = dayLogoLines.length + bottomLogoLines.length + topLogoLines.length;
 
-for (let r = 0; r < logoHeight; r++) {
-  let line = '';
+const emptyHeatmapRow = '    ' + ''.padEnd(weeks * CELL_W, ' ');
 
-  if (r < 7) {
-    // Show heatmap data for first 7 rows
-    line = (dayLabels[r] || '   ') + ' ';
-    for (let w = 0; w < weeks; w++) {
-      const cell = grid[r][w];
-      if (cell === null || !cell.inRange) {
-        if (noColor || !supportsColor) {
-          line += '.  '; // ASCII dot to avoid ambiguous width
-        } else {
-          line += bg(PALETTE[0], '  ') + ' ';
-        }
+for (const topLine of topLogoLines) {
+  outputLines.push(emptyHeatmapRow + '    ' + topLine);
+}
+
+for (let r = 0; r < 7; r++) {
+  let line = (dayLabels[r] || '   ') + ' ';
+  for (let w = 0; w < weeks; w++) {
+    const cell = grid[r][w];
+    if (cell === null || !cell.inRange) {
+      if (noColor || !supportsColor) {
+        line += '.  ';
       } else {
-        if (noColor || !supportsColor) {
-          // Use ASCII-safe characters to avoid ambiguous-width glyphs
-          const chars = ['.', ':', '-', '+', '#'];
-          const colorIndex = PALETTE.indexOf(cell.hex);
-          const char = chars[colorIndex] || '■';
-          line += char + '  '; // data cell: 1 char + 2 spaces => 3 cols
-        } else {
-          line += bg(cell.hex, '  ') + ' ';
-        }
+        line += bg(PALETTE[0], '  ') + ' ';
+      }
+    } else {
+      if (noColor || !supportsColor) {
+        const chars = ['.', ':', '-', '+', '#'];
+        const colorIndex = PALETTE.indexOf(cell.hex);
+        const char = chars[colorIndex] || '■';
+        line += char + '  ';
+      } else {
+        line += bg(cell.hex, '  ') + ' ';
       }
     }
-  } else {
-    // For extra logo rows, add spaces to match heatmap width
-    line = '    '; // day label space
-    for (let w = 0; w < weeks; w++) {
-      line += ' '.repeat(CELL_W);
-    }
   }
-  
-  // Add logo to the right side
-  const logoLine = logoLines[r] || '';
-  line += '    ' + logoLine; // Add some spacing between heatmap and logo
-  
+  const logoLine = dayLogoLines[r] || '';
+  line += '    ' + logoLine;
   outputLines.push(line);
+}
+
+for (const bottomLine of bottomLogoLines) {
+  outputLines.push(emptyHeatmapRow + '    ' + bottomLine);
 }
 
 // ---- Usage leaderboards (Claude + Codex)
